@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="WePlay Studio - Animation, Generative AI and Consulting Services">
+    <meta name="keywords" content="animation, 3D, 2D, generative AI, consulting, digital production">
+    <title>WePlay Studio | Animation & Digital Production</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <!-- Font Awesome para iconos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="img/favicon.png">
+</head>
+<body>
+    <!-- Header con video de fondo -->
+    <header id="header">
+        <div class="video-container">
+            <!-- El video de cabecera se cargará mediante JavaScript -->
+            <div id="header-video"></div>
+            <div class="header-quote">
+                <p>"If you want creative workers, give them enough time to play"</p>
+            </div>
+        </div>
+        <div class="header-content">
+            <div class="logo">
+                <img src="img/logos/LogoWhite.png" alt="WePlay Studio" class="logo-img">
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="#home" class="nav-icon"><i class="fas fa-home"></i></a></li>
+                    <li><a href="#portfolio" class="nav-icon"><i class="fas fa-film"></i></a></li>
+                    <li><a href="#services" class="nav-icon"><i class="fas fa-cogs"></i></a></li>
+                    <li><a href="#contact" class="nav-icon"><i class="fas fa-envelope"></i></a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Sección Principal -->
+    <section id="home" class="section">
+        <div class="container">
+            <div class="showreel">
+                <!-- El showreel se cargará mediante JavaScript -->
+                <div id="main-showreel"></div>
+            </div>
+            <div class="intro">
+                <h2>Welcome to WePlay Studio</h2>
+                <p>We are a creative studio specialized in animation, generative AI and consulting services. Our passion is to bring ideas to life through visual storytelling and innovative digital solutions.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Sección Portfolio -->
+    <section id="portfolio" class="section">
+        <div class="container">
+            <h2>Our Work</h2>
+            <div class="portfolio-grid">
+                <!-- Los videos del portfolio se cargarán mediante JavaScript -->
+                <div class="portfolio-item" data-video="https://vimeo.com/232961032">
+                    <div class="portfolio-thumbnail"></div>
+                    <div class="portfolio-info">
+                        <h3>Project 1</h3>
+                        <p>Animation</p>
+                    </div>
+                </div>
+                <div class="portfolio-item" data-video="https://vimeo.com/248287369">
+                    <div class="portfolio-thumbnail"></div>
+                    <div class="portfolio-info">
+                        <h3>Project 2</h3>
+                        <p>Motion Graphics</p>
+                    </div>
+                </div>
+                <div class="portfolio-item" data-video="https://vimeo.com/232327828">
+                    <div class="portfolio-thumbnail"></div>
+                    <div class="portfolio-info">
+                        <h3>Project 3</h3>
+                        <p>3D Animation</p>
+                    </div>
+                </div>
+                <div class="portfolio-item" data-video="https://vimeo.com/226716906">
+                    <div class="portfolio-thumbnail"></div>
+                    <div class="portfolio-info">
+                        <h3>Project 4</h3>
+                        <p>Visual Effects</p>
+                    </div>
+                </div>
+                <div class="portfolio-item" data-video="https://vimeo.com/232469459">
+                    <div class="portfolio-thumbnail"></div>
+                    <div class="portfolio-info">
+                        <h3>Project 5</h3>
+                        <p>Character Animation</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Sección Servicios -->
+    <section id="services" class="section">
+        <div class="container">
+            <h2>Our Services</h2>
+            <div class="services-grid">
+                <div class="service-item">
+                    <div class="service-icon">
+                        <i class="fas fa-film"></i>
+                    </div>
+                    <h3>Animation</h3>
+                    <p>From concept to final delivery, we create stunning 2D and 3D animations that tell your story with impact and emotion.</p>
+                </div>
+                <div class="service-item">
+                    <div class="service-icon">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <h3>Generative AI</h3>
+                    <p>Leveraging cutting-edge AI technologies to create unique visual experiences and innovative content solutions.</p>
+                </div>
+                <div class="service-item">
+                    <div class="service-icon">
+                        <i class="fas fa-lightbulb"></i>
+                    </div>
+                    <h3>Consulting</h3>
+                    <p>Expert guidance on digital production strategies, creative direction, and technical implementation for your projects.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Sección Social -->
+    <section id="social" class="section">
+        <div class="container">
+            <h2>Follow Us</h2>
+            <div class="social-links">
+                <a href="https://vimeo.com/weplaystudio" target="_blank" class="social-icon">
+                    <i class="fab fa-vimeo-v"></i>
+                </a>
+                <a href="https://www.instagram.com/weplay_studio/" target="_blank" class="social-icon">
+                    <i class="fab fa-instagram"></i>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Sección Contacto -->
+    <section id="contact" class="section">
+        <div class="container">
+            <h2>Get in Touch</h2>
+            <form id="contact-form" class="contact-form">
+                <div class="form-group">
+                    <label for="name">Name</label>
+                    <input type="text" id="name" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="subject">Subject</label>
+                    <input type="text" id="subject" name="subject" required>
+                </div>
+                <div class="form-group">
+                    <label for="message">Message</label>
+                    <textarea id="message" name="message" rows="5" required></textarea>
+                </div>
+                <button type="submit" class="submit-btn">Send Message</button>
+            </form>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer id="footer">
+        <div class="container">
+            <p>&copy; 2025 WePlay Studio. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <!-- Modal para visualización de videos -->
+    <div id="video-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <div id="modal-video-container"></div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/main.js"></script>
+    <script src="js/cms.js"></script>
+</body>
+</html>
