@@ -239,6 +239,11 @@ function initCmsPanel() {
         
         // Inicializar eventos del CMS
         initCmsEvents();
+        
+        // Inicializar integración con Netlify si está disponible
+        if (window.NetlifyAPI && typeof window.NetlifyAPI.init === 'function') {
+            window.NetlifyAPI.init();
+        }
     }
     
     // Mostrar panel
@@ -341,6 +346,7 @@ function toggleEditMode(enabled) {
 function saveOriginalContent() {
     originalContent = {
         headerVideo: document.getElementById('header-video').innerHTML,
+        headerQuote: document.querySelector('.header-quote p').textContent,
         mainShowreel: document.getElementById('main-showreel').innerHTML,
         introTitle: document.querySelector('.intro h2').textContent,
         introText: document.querySelector('.intro p').textContent,
@@ -360,6 +366,7 @@ function saveOriginalContent() {
 function makeElementsEditable() {
     // Títulos y textos
     const editableElements = [
+        document.querySelector('.header-quote p'),
         document.querySelector('.intro h2'),
         document.querySelector('.intro p'),
         document.querySelector('#portfolio h2'),
@@ -712,22 +719,21 @@ function applyColorChanges() {
 // Función para guardar cambios permanentemente
 function savePermanentChanges() {
     if (confirm('Are you sure you want to save all changes permanently? This will modify the website code.')) {
-        // Aquí se implementaría la lógica para guardar los cambios al servidor
-        // En este caso, simularemos que los cambios se guardan permanentemente
-        
-        // Guardar estado actual como original
-        saveOriginalContent();
-        
-        // Mostrar notificación
-        showNotification('All changes have been saved permanently!');
-        
-        // En un entorno real, aquí se enviarían los cambios al servidor
-        console.log('Changes saved permanently:', {
+        // Recopilar todos los cambios actuales
+        const currentChanges = {
             headerVideo: document.getElementById('header-video').innerHTML,
+            headerQuote: document.querySelector('.header-quote p').textContent,
             mainShowreel: document.getElementById('main-showreel').innerHTML,
             introTitle: document.querySelector('.intro h2').textContent,
             introText: document.querySelector('.intro p').textContent,
             portfolioTitle: document.querySelector('#portfolio h2').textContent,
+            portfolioItems: Array.from(document.querySelectorAll('.portfolio-item')).map(item => {
+                return {
+                    videoUrl: item.getAttribute('data-video'),
+                    title: item.querySelector('.portfolio-info h3').textContent,
+                    category: item.querySelector('.portfolio-info p').textContent
+                };
+            }),
             servicesTitle: document.querySelector('#services h2').textContent,
             serviceItems: Array.from(document.querySelectorAll('.service-item')).map(item => {
                 return {
@@ -735,8 +741,71 @@ function savePermanentChanges() {
                     text: item.querySelector('p').textContent
                 };
             }),
-            contactTitle: document.querySelector('#contact h2').textContent
-        });
+            socialTitle: document.querySelector('#social h2').textContent,
+            socialLinks: Array.from(document.querySelectorAll('.social-links a')).map(link => {
+                return {
+                    url: link.getAttribute('href'),
+                    icon: link.querySelector('i').className
+                };
+            }),
+            contactTitle: document.querySelector('#contact h2').textContent,
+            contactEmail: document.querySelector('form').getAttribute('action').replace('https://formsubmit.co/', '')
+        };
+        
+        // Guardar cambios en localStorage para persistencia
+        localStorage.setItem('weplay-cms-changes', JSON.stringify(currentChanges));
+        
+        // Crear un objeto con los cambios para enviar al servidor
+        const changesForServer = {
+            type: 'cms_save_changes',
+            changes: currentChanges,
+            timestamp: new Date().toISOString()
+        };
+        
+        // Intentar guardar en Netlify si está disponible
+        if (window.NetlifyAPI && typeof window.NetlifyAPI.saveChanges === 'function') {
+            window.NetlifyAPI.saveChanges(changesForServer)
+                .then(success => {
+                    if (!success) {
+                        // Si falla, ofrecer descarga como respaldo
+                        createDownloadableChanges(changesForServer);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error saving to Netlify:', error);
+                    // Si hay error, ofrecer descarga como respaldo
+                    createDownloadableChanges(changesForServer);
+                });
+        } else {
+            // Si Netlify API no está disponible, usar método de descarga
+            createDownloadableChanges(changesForServer);
+        }
+        
+        // Guardar estado actual como original
+        saveOriginalContent();
+        
+        // Mostrar notificación
+        showNotification('All changes have been saved permanently!');
+    }
+}
+
+// Función para crear archivo descargable con los cambios
+function createDownloadableChanges(changesData) {
+    // Crear un archivo de cambios descargable
+    const changesBlob = new Blob([JSON.stringify(changesData, null, 2)], {type: 'application/json'});
+    const changesURL = URL.createObjectURL(changesBlob);
+    
+    // Crear enlace de descarga
+    const downloadLink = document.createElement('a');
+    downloadLink.href = changesURL;
+    downloadLink.download = 'weplay-cms-changes.json';
+    
+    // Añadir temporalmente al DOM, hacer clic y eliminar
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
+}
+        showNotification('All changes have been saved permanently! Download the changes file to apply them to your repository.');
     }
 }
 

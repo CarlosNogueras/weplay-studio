@@ -207,6 +207,12 @@ function initContactForm() {
                     alert('Thank you for your message! We will contact you soon.');
                     // Limpiar formulario
                     contactForm.reset();
+                    
+                    // Limpiar cada campo individualmente para asegurar que se resetean
+                    document.getElementById('name').value = '';
+                    document.getElementById('email').value = '';
+                    document.getElementById('subject').value = '';
+                    document.getElementById('message').value = '';
                 } else {
                     throw new Error('Form submission failed');
                 }
@@ -228,7 +234,7 @@ function initAnimations() {
     function isInViewport(element) {
         const rect = element.getBoundingClientRect();
         return (
-            rect.top <= (window.innerHeight || document.documentElement.clientHeight) * 0.8 &&
+            rect.top <= (window.innerHeight || document.documentElement.clientHeight) * 0.85 &&
             rect.bottom >= 0
         );
     }
@@ -251,14 +257,22 @@ function initAnimations() {
                     
                     // Añadir efecto de entrada según el tipo de elemento
                     if (element.classList.contains('portfolio-item')) {
-                        element.style.animation = 'fadeInUp 0.6s ease forwards';
+                        element.style.animation = 'fadeInUp 0.8s ease forwards';
                         element.style.animationDelay = (Array.from(element.parentNode.children).indexOf(element) * 0.1) + 's';
                     } else if (element.classList.contains('service-item')) {
-                        element.style.animation = 'fadeInRight 0.6s ease forwards';
+                        element.style.animation = 'fadeInRight 0.8s ease forwards';
                         element.style.animationDelay = (Array.from(element.parentNode.children).indexOf(element) * 0.1) + 's';
                     } else {
-                        element.style.animation = 'fadeIn 0.6s ease forwards';
+                        element.style.animation = 'fadeIn 0.8s ease forwards';
                     }
+                }
+            } else {
+                // Quitar animación cuando el elemento sale del viewport
+                // para permitir que se anime nuevamente al volver a entrar
+                if (element.classList.contains('animate')) {
+                    element.classList.remove('animate');
+                    element.style.animation = '';
+                    element.style.opacity = '0';
                 }
             }
         });
@@ -293,7 +307,7 @@ function initAnimations() {
             @keyframes fadeInUp {
                 from { 
                     opacity: 0;
-                    transform: translateY(30px);
+                    transform: translateY(40px);
                 }
                 to { 
                     opacity: 1;
@@ -304,7 +318,7 @@ function initAnimations() {
             @keyframes fadeInRight {
                 from { 
                     opacity: 0;
-                    transform: translateX(-30px);
+                    transform: translateX(-40px);
                 }
                 to { 
                     opacity: 1;
@@ -314,6 +328,7 @@ function initAnimations() {
             
             .portfolio-item, .service-item, .intro, .contact-form {
                 opacity: 0;
+                transition: opacity 0.5s ease, transform 0.5s ease;
             }
             
             .animate {
