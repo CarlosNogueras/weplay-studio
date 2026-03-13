@@ -1,0 +1,48 @@
+# Netlify Configuration for WePlay Studio
+
+[build]
+  # Comando de build de Vite
+  command = "npm run build"
+  
+  # Directorio donde Vite genera los archivos de producción
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "18"
+
+# Configuración de redireccionamientos para Single Page Application
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Headers de seguridad y optimización
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    X-XSS-Protection = "1; mode=block"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    
+# Cache para assets estáticos (CSS, JS, imágenes)
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Cache para imágenes
+[[headers]]
+  for = "/*.png"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.jpg"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.webp"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
