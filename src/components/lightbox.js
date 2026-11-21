@@ -1,4 +1,6 @@
-// Lightbox Modal Component
+import { t } from '../i18n.js';
+
+// Lightbox Modal Component (supports Vimeo, YouTube & HTML5 Video with autoplay)
 export class Lightbox {
     constructor() {
         this.modal = null;
@@ -7,7 +9,6 @@ export class Lightbox {
     }
 
     init() {
-        // Create modal structure if it doesn't exist
         if (!document.getElementById('lightbox')) {
             this.createModal();
         }
@@ -17,7 +18,7 @@ export class Lightbox {
 
     createModal() {
         const modalHTML = `
-            <div id="lightbox" class="lightbox">
+            <div id="lightbox" class="lightbox" role="dialog" aria-modal="true" aria-labelledby="lightbox-title">
                 <div class="lightbox-overlay"></div>
                 <div class="lightbox-content">
                     <button class="lightbox-close" aria-label="Close">&times;</button>
@@ -48,7 +49,6 @@ export class Lightbox {
         closeBtn.addEventListener('click', () => this.close());
         overlay.addEventListener('click', () => this.close());
 
-        // Close on Escape key
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape' && this.modal.classList.contains('active')) {
                 this.close();
@@ -67,23 +67,19 @@ export class Lightbox {
         this.modal.classList.remove('active');
         document.body.style.overflow = '';
 
-        // Clear video to stop playback
         const container = document.getElementById('lightbox-media-container');
         container.innerHTML = '';
     }
 
     renderContent() {
-        const { title, thumbnail, url, description, tags } = this.currentVideo;
+        const { title, thumbnail, url, description, tags, category } = this.currentVideo;
 
-        // Update title and category
         document.getElementById('lightbox-title').textContent = title;
-        document.getElementById('lightbox-category').textContent = 'Vimeo';
+        document.getElementById('lightbox-category').textContent = category || this.detectPlatform(url);
 
-        // Update description
         const descEl = document.getElementById('lightbox-description');
-        descEl.textContent = description || 'No description available';
+        descEl.textContent = description || t('lightbox.noDesc');
 
-        // Update tags
         const tagsEl = document.getElementById('lightbox-tags');
         if (tags && tags.length > 0) {
             tagsEl.innerHTML = tags.map(tag => `<span class="tag">${tag}</span>`).join('');
@@ -91,59 +87,98 @@ export class Lightbox {
             tagsEl.innerHTML = '';
         }
 
-        // Update link
-        document.getElementById('lightbox-link').href = url;
+        const linkEl = document.getElementById('lightbox-link');
+        linkEl.textContent = t('lightbox.viewOriginal');
+        if (url) {
+            linkEl.href = url;
+            linkEl.style.display = 'inline-flex';
+        } else {
+            linkEl.style.display = 'none';
+        }
 
-        // Render video player WITHOUT autoplay
         this.renderVideo(url, thumbnail);
+    }
+
+    detectPlatform(url = '') {
+        if (/youtube\.com|youtu\.be/i.test(url)) return 'YouTube';
+        if (/vimeo\.com/i.test(url)) return 'Vimeo';
+        if (/\.(mp4|webm)(\?.*)?$/i.test(url)) return 'WePlay Studio';
+        return 'Video';
     }
 
     renderVideo(url, thumbnail) {
         const container = document.getElementById('lightbox-media-container');
 
-        // Extract Vimeo ID from URL
-        const vimeoId = this.extractVimeoId(url);
-        console.log('Rendering Vimeo video:', { url, vimeoId });
-
-        if (vimeoId) {
+        const youtubeId = this.extractYouTubeId(url);
+        if (youtubeId) {
             container.innerHTML = `
-                <iframe 
-                    src="https://player.vimeo.com/video/${vimeoId}?badge=0&autopause=0&player_id=0&app_id=58479&autoplay=1" 
-                    width="100%" 
-                    height="100%" 
-                    frameborder="0" 
-                    allow="autoplay; fullscreen; picture-in-picture; clipboard-write" 
-                    title="Vimeo video player"
-                    webkitallowfullscreen 
-                    mozallowfullscreen 
+                <iframe
+                    src="https://www.youtube-nocookie.com/embed/${youtubeId}?autoplay=1&rel=0&modestbranding=1"
+                    width="100%"
+                    height="100%"
+                    frameborder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    title="YouTube video player"
                     allowfullscreen
                     class="lightbox-iframe">
                 </iframe>
             `;
-        } else {
-            console.warn('Could not extract Vimeo ID from URL:', url);
-            // Fallback to image with a link
-            container.innerHTML = `
-                <div class="lightbox-fallback">
-                    <img src="${thumbnail}" alt="Video thumbnail" class="lightbox-image">
-                    <a href="${url}" target="_blank" class="btn btn-primary" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
-                        Watch on Vimeo
-                    </a>
-                </div>
-            `;
+            return;
         }
+
+        const vimeoId = this.extractVimeoId(url);
+        if (vimeoId) {
+            container.innerHTML = `
+                <iframe
+                    src="https://player.vimeo.com/video/${vimeoId}?badge=0&autopause=0&player_id=0&app_id=58479&autoplay=1"
+                    width="100%"
+                    height="100%"
+                    frameborder="0"
+                    allow="autoplay; fullscreen; picture-in-picture; clipboard-write"
+                    title="Vimeo video player"
+                    allowfullscreen
+                    class="lightbox-iframe">
+                </iframe>
+            `;
+            return;
+        }
+
+        if (/\.(mp4|webm)(\?.*)?$/i.test(url || '')) {
+            container.innerHTML = `
+                <video
+                    src="${url}"
+                    poster="${thumbnail || ''}"
+                    controls
+                    autoplay
+                    playsinline
+                    class="lightbox-iframe">
+                </video>
+            `;
+            return;
+        }
+
+        container.innerHTML = `
+            <div class="lightbox-fallback">
+                <img src="${thumbnail}" alt="Video thumbnail" class="lightbox-image">
+                <a href="${url}" target="_blank" rel="noopener noreferrer" class="btn btn-primary" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
+                    ${t('lightbox.viewOriginal')}
+                </a>
+            </div>
+        `;
     }
 
-    extractVimeoId(url) {
-        // Handle various Vimeo URL formats (standard, channels, groups)
+    extractYouTubeId(url = '') {
+        const regExp = /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/;
+        const match = url.match(regExp);
+        return match ? match[1] : null;
+    }
+
+    extractVimeoId(url = '') {
         const regExp = /^.*(vimeo\.com\/)((channels\/[A-z]+\/)|(groups\/[A-z]+\/videos\/))?([0-9]+)/;
         const match = url.match(regExp);
-
         if (match && match[5]) {
             return match[5];
         }
-
-        // Fallback for simple numeric ID at the end
         const simpleMatch = url.match(/(\d+)$/);
         return simpleMatch ? simpleMatch[1] : null;
     }

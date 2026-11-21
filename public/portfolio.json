@@ -1,0 +1,22 @@
+{
+  "maxItems": 10,
+  "fillWithVimeo": true,
+  "shuffleRest": false,
+  "pinned": [
+    {
+      "url": "https://vimeo.com/1141722560",
+      "title": "Comet",
+      "category": "Animation"
+    },
+    {
+      "url": "https://vimeo.com/1141722404",
+      "title": "El Mando",
+      "category": "Animation"
+    },
+    {
+      "url": "https://vimeo.com/1141721893",
+      "title": "Grafiti",
+      "category": "Generative AI"
+    }
+  ]
+}
