@@ -1,5 +1,6 @@
 import './style.css'
 import { fetchPortfolioProjects, extractVimeoId, extractYouTubeId } from './services/social.js'
+import { soundEngine } from './services/soundEngine.js'
 import { Lightbox } from './components/lightbox.js'
 import { applyLanguage, getCurrentLang, t } from './i18n.js'
 import {
@@ -11,6 +12,7 @@ import {
 
 const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
 const prefersTouch = window.matchMedia('(hover: none)').matches
+const supportsFineHover = window.matchMedia('(hover: hover) and (pointer: fine)').matches
 
 // Split Hero headline into interactive kinetic words
 function animateHeroTitle() {
@@ -22,10 +24,11 @@ function animateHeroTitle() {
     const words = text.split(' ')
     line.innerHTML = words
       .map((word) => {
+        const currentIndex = wordIndex
         const delay = 80 + wordIndex * 65
         const tilt = wordIndex % 2 === 0 ? '-3deg' : '3deg'
         wordIndex += 1
-        return `<span class="hero-word" style="--word-delay:${delay}ms;--word-tilt:${tilt}">${word}</span>`
+        return `<span class="hero-word" data-word-index="${currentIndex}" style="--word-delay:${delay}ms;--word-tilt:${tilt}">${word}</span>`
       })
       .join(' ')
   })
@@ -35,11 +38,499 @@ function animateHeroTitle() {
 let currentLang = applyLanguage(getCurrentLang())
 animateHeroTitle()
 
+// Studio Showreel Player (scroll autoplay muted + hover/click sound + EN/ES sync)
+const reelPlayer = document.getElementById('reel-player')
+const reelVideo = document.getElementById('reel-video')
+const reelPlayBtn = document.getElementById('reel-play-btn')
+const reelMuteBtn = document.getElementById('reel-mute-btn')
+const reelMuteLabel = document.getElementById('reel-mute-label')
+const reelSoundHint = document.getElementById('reel-sound-hint')
+const reelProgress = document.getElementById('reel-progress')
+const reelProgressFill = document.getElementById('reel-progress-fill')
+const reelTime = document.getElementById('reel-time')
+const reelFullscreenBtn = document.getElementById('reel-fullscreen-btn')
+
+const REEL_SOURCES = {
+  en: '/videos/reel-en.mp4',
+  es: '/videos/reel-es.mp4'
+}
+
+let reelState = {
+  inView: false,
+  hovering: false,
+  hoverUnmutedAt: 0,
+  userSoundPref: null, // null = auto (hover enables sound), 'on' = locked unmuted, 'off' = locked muted
+  userPaused: false,
+  hoverBlockedByPolicy: false,
+  fadeRaf: null
+}
+
+function formatReelTime(sec) {
+  if (!Number.isFinite(sec) || sec < 0) return '0:00'
+  const m = Math.floor(sec / 60)
+  const s = Math.floor(sec % 60)
+  return `${m}:${String(s).padStart(2, '0')}`
+}
+
+function syncReelUI() {
+  if (!reelPlayer || !reelVideo) return
+  const isMuted = reelVideo.muted
+  const isPlaying = !reelVideo.paused && !reelVideo.ended
+  reelPlayer.dataset.muted = String(isMuted)
+  reelPlayer.dataset.playing = String(isPlaying)
+
+  if (reelMuteBtn) {
+    reelMuteBtn.setAttribute('aria-pressed', String(!isMuted))
+  }
+  if (reelMuteLabel) {
+    reelMuteLabel.textContent = t(isMuted ? 'reel.soundOff' : 'reel.soundOn', currentLang)
+  }
+  if (reelSoundHint) {
+    reelSoundHint.textContent = t(
+      reelState.hoverBlockedByPolicy ? 'reel.clickHint' : 'reel.hoverHint',
+      currentLang
+    )
+  }
+
+  // Duck ambient soundscape whenever the showreel plays with audio
+  soundEngine.setDucked('reel', isPlaying && !isMuted)
+}
+
+function fadeReelVolume(targetVolume, durationMs = 240, onComplete = null) {
+  if (!reelVideo) return
+  if (reelState.fadeRaf) cancelAnimationFrame(reelState.fadeRaf)
+  const startVolume = reelVideo.volume
+  const startTime = performance.now()
+
+  const step = (now) => {
+    const progress = Math.max(0, Math.min(1, (now - startTime) / durationMs))
+    const nextVolume = startVolume + (targetVolume - startVolume) * progress
+    reelVideo.volume = Math.max(0, Math.min(1, nextVolume))
+    if (progress < 1) {
+      reelState.fadeRaf = requestAnimationFrame(step)
+    } else {
+      reelState.fadeRaf = null
+      if (onComplete) onComplete()
+    }
+  }
+  reelState.fadeRaf = requestAnimationFrame(step)
+}
+
+function safePlayReel({ preferUnmuted = false, fromHover = false } = {}) {
+  if (!reelVideo) return
+  if (preferUnmuted) {
+    reelVideo.muted = false
+    reelVideo.volume = 0
+  } else {
+    reelVideo.muted = true
+  }
+
+  const p = reelVideo.play()
+  if (p && typeof p.then === 'function') {
+    p.then(() => {
+      if (preferUnmuted) {
+        reelState.hoverBlockedByPolicy = false
+        fadeReelVolume(1, 240)
+      }
+      syncReelUI()
+    }).catch(() => {
+      // Browser blocked unmuted playback before user gesture: keep playing muted and show click hint
+      if (preferUnmuted) {
+        reelVideo.muted = true
+        reelVideo.volume = 1
+        if (fromHover) reelState.hoverBlockedByPolicy = true
+        reelVideo.play().catch(() => {})
+      }
+      syncReelUI()
+    })
+  } else {
+    if (preferUnmuted) fadeReelVolume(1, 240)
+    syncReelUI()
+  }
+}
+
+function updateReelSourceForLanguage(lang) {
+  if (!reelVideo) return
+  const targetSrc = REEL_SOURCES[lang] || REEL_SOURCES.en
+  const currentPathname = (() => {
+    try {
+      return new URL(reelVideo.currentSrc || reelVideo.src, window.location.origin).pathname
+    } catch {
+      return reelVideo.getAttribute('src') || ''
+    }
+  })()
+
+  if (currentPathname === targetSrc) {
+    syncReelUI()
+    return
+  }
+
+  const savedTime = reelVideo.currentTime || 0
+  const wasPlaying = !reelVideo.paused && !reelVideo.ended
+  const wasMuted = reelVideo.muted
+
+  reelVideo.src = targetSrc
+  reelVideo.load()
+
+  const restoreState = () => {
+    if (savedTime > 0 && Number.isFinite(reelVideo.duration)) {
+      reelVideo.currentTime = Math.min(savedTime, Math.max(0, reelVideo.duration - 0.1))
+    }
+    reelVideo.muted = wasMuted
+    if (wasPlaying || (reelState.inView && !reelState.userPaused)) {
+      safePlayReel({ preferUnmuted: !wasMuted })
+    } else {
+      syncReelUI()
+    }
+  }
+
+  if (reelVideo.readyState >= 1) {
+    restoreState()
+  } else {
+    reelVideo.addEventListener('loadedmetadata', restoreState, { once: true })
+  }
+  syncReelUI()
+}
+
+if (reelPlayer && reelVideo) {
+  // Set initial language source immediately
+  updateReelSourceForLanguage(currentLang)
+
+  // Scroll-triggered muted autoplay
+  if (!prefersReducedMotion) {
+    const reelObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        reelState.inView = entry.isIntersecting
+        if (entry.isIntersecting) {
+          if (!reelState.userPaused) {
+            const shouldUnmute = reelState.userSoundPref === 'on' || (reelState.hovering && reelState.userSoundPref !== 'off')
+            safePlayReel({ preferUnmuted: shouldUnmute })
+          }
+        } else {
+          if (!reelVideo.paused) {
+            reelVideo.pause()
+          }
+          if (reelState.userSoundPref !== 'on') {
+            reelVideo.muted = true
+          }
+          syncReelUI()
+        }
+      })
+    }, { threshold: 0.35 })
+
+    reelObserver.observe(reelPlayer)
+  }
+
+  // Hover activates sound smoothly on fine-pointer devices; leaving fades back to muted unless user locked sound ON
+  if (supportsFineHover) {
+    reelPlayer.addEventListener('mouseenter', () => {
+      reelState.hovering = true
+      if (reelState.userSoundPref === 'off') return
+      if (reelVideo.paused && !reelState.userPaused) {
+        reelState.hoverUnmutedAt = performance.now()
+        safePlayReel({ preferUnmuted: true, fromHover: true })
+      } else if (!reelVideo.paused && reelVideo.muted) {
+        reelState.hoverUnmutedAt = performance.now()
+        safePlayReel({ preferUnmuted: true, fromHover: true })
+      }
+    })
+
+    reelPlayer.addEventListener('mouseleave', () => {
+      reelState.hovering = false
+      if (reelState.userSoundPref === 'on') return
+      if (!reelVideo.muted) {
+        fadeReelVolume(0, 200, () => {
+          if (!reelState.hovering && reelState.userSoundPref !== 'on') {
+            reelVideo.muted = true
+            reelVideo.volume = 1
+            syncReelUI()
+          }
+        })
+      }
+    })
+  }
+
+  // Click on video area toggles sound if muted, or toggles play/pause if already unmuted
+  reelVideo.addEventListener('click', () => {
+    reelState.hoverBlockedByPolicy = false
+    if (reelVideo.paused) {
+      reelState.userPaused = false
+      reelState.userSoundPref = 'on'
+      safePlayReel({ preferUnmuted: true })
+    } else if (reelVideo.muted || (reelState.userSoundPref === null && performance.now() - reelState.hoverUnmutedAt < 400)) {
+      reelState.userSoundPref = 'on'
+      safePlayReel({ preferUnmuted: true })
+    } else {
+      reelState.userPaused = true
+      reelVideo.pause()
+      syncReelUI()
+    }
+  })
+
+  if (reelPlayBtn) {
+    reelPlayBtn.addEventListener('click', (e) => {
+      e.stopPropagation()
+      if (reelVideo.paused) {
+        reelState.userPaused = false
+        safePlayReel({ preferUnmuted: !reelVideo.muted || reelState.userSoundPref === 'on' })
+      } else {
+        reelState.userPaused = true
+        reelVideo.pause()
+        syncReelUI()
+      }
+    })
+  }
+
+  if (reelMuteBtn) {
+    reelMuteBtn.addEventListener('click', (e) => {
+      e.stopPropagation()
+      reelState.hoverBlockedByPolicy = false
+      const justHoverUnmuted = reelState.userSoundPref === null && (performance.now() - reelState.hoverUnmutedAt < 400)
+      if (reelVideo.muted || justHoverUnmuted) {
+        reelState.userSoundPref = 'on'
+        safePlayReel({ preferUnmuted: true })
+      } else {
+        reelState.userSoundPref = 'off'
+        reelVideo.muted = true
+        reelVideo.volume = 1
+        syncReelUI()
+      }
+    })
+  }
+
+  // Progress bar + time readout
+  const updateProgress = () => {
+    const dur = reelVideo.duration || 45
+    const cur = reelVideo.currentTime || 0
+    const pct = dur > 0 ? Math.min(100, (cur / dur) * 100) : 0
+    if (reelProgressFill) reelProgressFill.style.width = `${pct}%`
+    if (reelProgress) reelProgress.setAttribute('aria-valuenow', String(Math.round(pct)))
+    if (reelTime) reelTime.textContent = `${formatReelTime(cur)} / ${formatReelTime(dur)}`
+  }
+
+  reelVideo.addEventListener('timeupdate', updateProgress)
+  reelVideo.addEventListener('loadedmetadata', updateProgress)
+  reelVideo.addEventListener('play', syncReelUI)
+  reelVideo.addEventListener('pause', syncReelUI)
+  reelVideo.addEventListener('volumechange', syncReelUI)
+
+  if (reelProgress) {
+    const seekAtClientX = (clientX) => {
+      const rect = reelProgress.getBoundingClientRect()
+      const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width))
+      if (Number.isFinite(reelVideo.duration)) {
+        reelVideo.currentTime = ratio * reelVideo.duration
+      }
+    }
+
+    reelProgress.addEventListener('click', (e) => {
+      e.stopPropagation()
+      seekAtClientX(e.clientX)
+    })
+
+    reelProgress.addEventListener('keydown', (e) => {
+      if (!Number.isFinite(reelVideo.duration)) return
+      if (e.key === 'ArrowRight') {
+        reelVideo.currentTime = Math.min(reelVideo.duration, reelVideo.currentTime + 5)
+      } else if (e.key === 'ArrowLeft') {
+        reelVideo.currentTime = Math.max(0, reelVideo.currentTime - 5)
+      }
+    })
+  }
+
+  if (reelFullscreenBtn) {
+    reelFullscreenBtn.addEventListener('click', (e) => {
+      e.stopPropagation()
+      const viewport = reelPlayer.querySelector('.reel-viewport') || reelVideo
+      if (document.fullscreenElement) {
+        document.exitFullscreen().catch(() => {})
+      } else if (viewport.requestFullscreen) {
+        viewport.requestFullscreen().catch(() => {})
+      } else if (reelVideo.webkitEnterFullscreen) {
+        reelVideo.webkitEnterFullscreen()
+      }
+    })
+  }
+}
+
 document.querySelectorAll('.lang-btn').forEach((btn) => {
   btn.addEventListener('click', () => {
     currentLang = applyLanguage(btn.dataset.lang)
     animateHeroTitle()
+    updateReelSourceForLanguage(currentLang)
+    updateSoundToggleUI(soundEngine.getState())
   })
+})
+
+// ---------------------------------------------------------------------------
+// Interactive Soundscape & Tactile UI Foley
+// ---------------------------------------------------------------------------
+const soundToggleBtn = document.getElementById('sound-toggle-btn')
+const workSectionEl = document.getElementById('work')
+const heroTitleEl = document.getElementById('hero-title')
+
+function updateSoundToggleUI(state) {
+  if (!soundToggleBtn) return
+  const isOn = state.active
+  soundToggleBtn.classList.toggle('is-active', isOn)
+  soundToggleBtn.classList.toggle('is-ready', Boolean(state.waitingForGesture))
+  soundToggleBtn.setAttribute('aria-pressed', String(isOn))
+  soundToggleBtn.setAttribute(
+    'title',
+    t(isOn ? 'sound.onTitle' : 'sound.offTitle', currentLang)
+  )
+}
+
+soundEngine.onChange(updateSoundToggleUI)
+
+if (soundToggleBtn) {
+  soundToggleBtn.addEventListener('click', () => {
+    soundEngine.toggle()
+  })
+}
+
+// Reliable cross-platform audio unlock (retries across iOS Safari / Android touchend, click & keydown until AudioContext is running)
+const UNLOCK_EVENTS = ['pointerdown', 'touchend', 'click', 'keydown']
+const tryUnlockAudio = () => {
+  if (!soundEngine.enabled) return
+  soundEngine.unlock().then((running) => {
+    if (running) {
+      UNLOCK_EVENTS.forEach((evt) => window.removeEventListener(evt, tryUnlockAudio))
+    }
+  })
+}
+UNLOCK_EVENTS.forEach((evt) => window.addEventListener(evt, tryUnlockAudio, { passive: true }))
+
+// Duck ambient soundscape while a project Lightbox video is open
+window.addEventListener('weplay:lightbox', (e) => {
+  soundEngine.setDucked('lightbox', Boolean(e.detail?.open))
+})
+
+// Switch atmosphere from Hero floating particles -> deep atmospheric drone at #work (and rest of site)
+if (workSectionEl) {
+  let scrollTicking = false
+  const updateAtmosphereByScroll = () => {
+    scrollTicking = false
+    const workTop = workSectionEl.getBoundingClientRect().top
+    const enterWorkThreshold = window.innerHeight * 0.58
+    soundEngine.setMode(workTop <= enterWorkThreshold ? 'work' : 'hero')
+  }
+
+  const onScrollAtmosphere = () => {
+    if (!scrollTicking) {
+      scrollTicking = true
+      requestAnimationFrame(updateAtmosphereByScroll)
+    }
+  }
+
+  window.addEventListener('scroll', onScrollAtmosphere, { passive: true })
+  window.addEventListener('resize', onScrollAtmosphere, { passive: true })
+  updateAtmosphereByScroll()
+}
+
+// Hero kinetic words chime: desktop hover + mobile/tablet tap & finger slide
+if (heroTitleEl) {
+  const triggerHeroWord = (word, withBounce = false) => {
+    if (!word) return
+    const idx = Number(word.dataset.wordIndex || 0)
+    if (withBounce) {
+      word.classList.add('is-bouncing')
+      clearTimeout(word._bounceTimer)
+      word._bounceTimer = setTimeout(() => word.classList.remove('is-bouncing'), 340)
+    }
+    if (soundEngine.enabled) {
+      soundEngine.unlock().then((ok) => {
+        if (ok) soundEngine.playWordHover(idx)
+      })
+    }
+  }
+
+  if (!prefersTouch) {
+    heroTitleEl.addEventListener('mouseover', (e) => {
+      const word = e.target.closest('.hero-word')
+      if (!word || (e.relatedTarget && word.contains(e.relatedTarget))) return
+      triggerHeroWord(word, false)
+    })
+  }
+
+  let lastTouchedWord = null
+  heroTitleEl.addEventListener('touchstart', (e) => {
+    const word = e.target.closest('.hero-word')
+    lastTouchedWord = word || null
+    if (word) triggerHeroWord(word, true)
+  }, { passive: true })
+
+  heroTitleEl.addEventListener('touchmove', (e) => {
+    const touch = e.touches[0]
+    if (!touch) return
+    const el = document.elementFromPoint(touch.clientX, touch.clientY)
+    const word = el ? el.closest('.hero-word') : null
+    if (word && word !== lastTouchedWord) {
+      lastTouchedWord = word
+      triggerHeroWord(word, true)
+    }
+  }, { passive: true })
+
+  heroTitleEl.addEventListener('touchend', () => {
+    lastTouchedWord = null
+  }, { passive: true })
+}
+
+// Tactile hover (soft) & click (richer/stronger) sounds on buttons, chips, links & cards
+const INTERACTIVE_HOVER_SELECTOR = [
+  '.btn',
+  '.hero-chip',
+  '.lang-btn',
+  '.sound-toggle',
+  '.nav-links a',
+  '.hero-scroll-indicator',
+  '.social-card',
+  '.service-card',
+  '.project-card',
+  '.reel-ctrl-btn',
+  '.reel-sound-pill',
+  '.contact-modal-close',
+  '.lightbox-close'
+].join(', ')
+
+const INTERACTIVE_CLICK_SELECTOR = [
+  '.btn',
+  '.hero-chip',
+  '.lang-btn',
+  '.nav-links a',
+  '.hero-scroll-indicator',
+  '.social-card',
+  '.project-card',
+  '.reel-ctrl-btn',
+  '.reel-sound-pill',
+  '.contact-modal-close',
+  '.lightbox-close',
+  '.mobile-menu-toggle'
+].join(', ')
+
+if (!prefersTouch) {
+  let lastHoveredEl = null
+  document.addEventListener('mouseover', (e) => {
+    const target = e.target.closest(INTERACTIVE_HOVER_SELECTOR)
+    if (!target) {
+      lastHoveredEl = null
+      return
+    }
+    if (target !== lastHoveredEl) {
+      lastHoveredEl = target
+      soundEngine.playHover()
+    }
+  })
+}
+
+document.addEventListener('pointerdown', (e) => {
+  const target = e.target.closest(INTERACTIVE_CLICK_SELECTOR)
+  if (!target) return
+  if (soundEngine.enabled) {
+    soundEngine.unlock().then((ok) => {
+      if (ok) soundEngine.playClick()
+    })
+  }
 })
 
 // Hero interactive spotlight & playful spark particles

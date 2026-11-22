@@ -25,20 +25,20 @@ export const config = {
          */
         pinned: [
             {
-                vimeoId: 1141722560,
-                title: 'Comet',
+                vimeoId: 1173557294,
+                title: 'Logo',
                 category: 'Animation',
                 featured: true
             },
             {
-                vimeoId: 1141722404,
-                title: 'El Mando',
-                category: 'Animation',
+                vimeoId: 1248934281,
+                title: 'PULSE - Capítulo cero Teaser - El Desliz',
+                category: 'Generative AI',
                 featured: true
             },
             {
-                vimeoId: 1141721893,
-                title: 'Grafiti',
+                vimeoId: 1171980438,
+                title: 'The Capsule - Official Trailer 2026',
                 category: 'Generative AI',
                 featured: true
             }

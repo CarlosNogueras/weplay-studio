@@ -34,6 +34,15 @@
                         <span class="lang-sep" aria-hidden="true">/</span>
                         <button type="button" class="lang-btn" data-lang="es" aria-pressed="false">ES</button>
                     </div>
+                    <button type="button" id="sound-toggle-btn" class="sound-toggle" aria-label="Toggle site sound"
+                        aria-pressed="false" title="Sound">
+                        <span class="sound-bars" aria-hidden="true">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </span>
+                        <span id="sound-toggle-label" class="sound-toggle-label" data-i18n="sound.label">SFX</span>
+                    </button>
                     <button type="button" id="mobile-menu-toggle" class="mobile-menu-toggle"
                         aria-label="Toggle navigation" aria-expanded="false" aria-controls="nav-links">
                         <span></span>
@@ -69,10 +78,95 @@
                     <a href="#work" class="btn btn-primary hero-animate hero-animate-3" data-i18n="hero.cta">View Our
                         Work</a>
                 </div>
-                <a href="#work" class="hero-scroll-indicator hero-animate hero-animate-4" aria-label="Scroll to work">
+                <a href="#reel" class="hero-scroll-indicator hero-animate hero-animate-4" aria-label="Scroll to what we do">
                     <span data-i18n="hero.scroll">Scroll to explore</span>
                     <span class="scroll-line" aria-hidden="true"></span>
                 </a>
+            </section>
+
+            <!-- What We Do Video Section -->
+            <section id="reel" class="reel-section section-padding">
+                <div class="container">
+                    <div class="section-header reel-header reveal-on-scroll">
+                        <h2><span data-i18n="reel.title.before">What</span> <span class="text-accent"
+                                data-i18n="reel.title.accent">We Do</span></h2>
+                        <p class="section-subtitle" data-i18n="reel.subtitle">Animation, generative AI and creative
+                            direction in motion.</p>
+                    </div>
+
+                    <div id="reel-player" class="reel-frame reveal-on-scroll" data-muted="true" data-playing="false">
+                        <div class="reel-glow" aria-hidden="true"></div>
+                        <div class="reel-viewport">
+                            <video id="reel-video" class="reel-video" src="/videos/reel-en.mp4"
+                                poster="/videos/reel-poster.jpg" muted loop playsinline preload="metadata"></video>
+
+                            <div class="reel-top-bar">
+                                <span id="reel-sound-hint" class="reel-sound-hint" data-i18n="reel.hoverHint">Hover or
+                                    click for sound</span>
+                                <span class="reel-badge">
+                                    <span class="reel-badge-dot" aria-hidden="true"></span>
+                                    <span id="reel-lang-label" data-i18n="reel.badge">Audio · EN</span>
+                                </span>
+                            </div>
+
+                            <div class="reel-controls">
+                                <div class="reel-controls-row">
+                                    <button type="button" id="reel-play-btn" class="reel-ctrl-btn"
+                                        aria-label="Play or pause video">
+                                        <svg class="icon-play" viewBox="0 0 24 24" fill="currentColor"
+                                            aria-hidden="true">
+                                            <path d="M8 5v14l11-7z" />
+                                        </svg>
+                                        <svg class="icon-pause" viewBox="0 0 24 24" fill="currentColor"
+                                            aria-hidden="true">
+                                            <path d="M6 5h4v14H6zm8 0h4v14h-4z" />
+                                        </svg>
+                                    </button>
+
+                                    <button type="button" id="reel-mute-btn" class="reel-sound-pill"
+                                        aria-label="Toggle sound" aria-pressed="false">
+                                        <svg class="icon-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                            aria-hidden="true">
+                                            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                                            <line x1="23" y1="9" x2="17" y2="15" />
+                                            <line x1="17" y1="9" x2="23" y2="15" />
+                                        </svg>
+                                        <svg class="icon-unmuted" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                            aria-hidden="true">
+                                            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                                            <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+                                            <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+                                        </svg>
+                                        <span id="reel-mute-label" data-i18n="reel.soundOff">Sound Off</span>
+                                    </button>
+
+                                    <div id="reel-progress" class="reel-progress" role="slider"
+                                        aria-label="Video progress" aria-valuemin="0" aria-valuemax="100"
+                                        aria-valuenow="0" tabindex="0">
+                                        <div class="reel-progress-track">
+                                            <div id="reel-progress-fill" class="reel-progress-fill"></div>
+                                        </div>
+                                    </div>
+
+                                    <span id="reel-time" class="reel-time">0:00 / 0:45</span>
+
+                                    <button type="button" id="reel-fullscreen-btn" class="reel-ctrl-btn"
+                                        aria-label="Fullscreen">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                            <polyline points="15 3 21 3 21 9" />
+                                            <polyline points="9 21 3 21 3 15" />
+                                            <line x1="21" y1="3" x2="14" y2="10" />
+                                            <line x1="3" y1="21" x2="10" y2="14" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </section>
 
             <!-- Work Section -->

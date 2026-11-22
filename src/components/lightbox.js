@@ -61,11 +61,13 @@ export class Lightbox {
         this.renderContent();
         this.modal.classList.add('active');
         document.body.style.overflow = 'hidden';
+        window.dispatchEvent(new CustomEvent('weplay:lightbox', { detail: { open: true } }));
     }
 
     close() {
         this.modal.classList.remove('active');
         document.body.style.overflow = '';
+        window.dispatchEvent(new CustomEvent('weplay:lightbox', { detail: { open: false } }));
 
         const container = document.getElementById('lightbox-media-container');
         container.innerHTML = '';
