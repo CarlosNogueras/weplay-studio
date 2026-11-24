@@ -34,3 +34,6 @@ dist/
 
 # Netlify
 .netlify
+
+# Local social media drafts
+social-reels/

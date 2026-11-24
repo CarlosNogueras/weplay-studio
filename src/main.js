@@ -358,6 +358,7 @@ document.querySelectorAll('.lang-btn').forEach((btn) => {
     currentLang = applyLanguage(btn.dataset.lang)
     animateHeroTitle()
     updateReelSourceForLanguage(currentLang)
+    updateServiceModalLanguage(currentLang)
     updateSoundToggleUI(soundEngine.getState())
   })
 })
@@ -718,6 +719,117 @@ serviceCards.forEach((card) => {
     card.style.transform = ''
     pauseServiceVideo(card, video)
   })
+
+  card.addEventListener('click', () => {
+    const serviceKey = card.dataset.service
+    if (serviceKey) openServiceModal(serviceKey)
+  })
+
+  card.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      const serviceKey = card.dataset.service
+      if (serviceKey) openServiceModal(serviceKey)
+    }
+  })
+})
+
+// Panoramic 16:9 Service Explainer Modal (EN/ES synced)
+const serviceModal = document.getElementById('service-video-modal')
+const serviceModalVideo = document.getElementById('service-modal-video')
+const serviceModalTitle = document.getElementById('service-modal-title')
+const serviceModalClose = document.querySelector('.service-video-close')
+const serviceModalOverlay = document.querySelector('.service-video-overlay')
+
+const SERVICE_EXPLAINERS = {
+  animation: {
+    titleKey: 'services.animation.title',
+    poster: '/animation-service.jpg',
+    en: '/videos/services/animation-en.mp4',
+    es: '/videos/services/animation-es.mp4'
+  },
+  ai: {
+    titleKey: 'services.ai.title',
+    poster: '/ai-service.jpg',
+    en: '/videos/services/ai-en.mp4',
+    es: '/videos/services/ai-es.mp4'
+  },
+  consulting: {
+    titleKey: 'services.consulting.title',
+    poster: '/consulting-service.jpg',
+    en: '/videos/services/consulting-en.mp4',
+    es: '/videos/services/consulting-es.mp4'
+  }
+}
+
+let activeServiceKey = null
+
+function openServiceModal(serviceKey) {
+  const cfg = SERVICE_EXPLAINERS[serviceKey]
+  if (!cfg || !serviceModal || !serviceModalVideo) return
+
+  activeServiceKey = serviceKey
+  if (serviceModalTitle) {
+    serviceModalTitle.textContent = t(cfg.titleKey, currentLang)
+  }
+
+  serviceModalVideo.poster = cfg.poster
+  serviceModalVideo.src = cfg[currentLang] || cfg.en
+  serviceModalVideo.currentTime = 0
+  serviceModalVideo.muted = false
+  serviceModalVideo.load()
+
+  serviceModal.classList.add('active')
+  serviceModal.setAttribute('aria-hidden', 'false')
+  document.body.style.overflow = 'hidden'
+  soundEngine.setDucked('serviceModal', true)
+
+  serviceModalVideo.play().catch(() => {
+    serviceModalVideo.muted = true
+    serviceModalVideo.play().catch(() => {})
+  })
+}
+
+function updateServiceModalLanguage(lang) {
+  if (!activeServiceKey || !serviceModal?.classList.contains('active') || !serviceModalVideo) return
+  const cfg = SERVICE_EXPLAINERS[activeServiceKey]
+  if (!cfg) return
+  if (serviceModalTitle) {
+    serviceModalTitle.textContent = t(cfg.titleKey, lang)
+  }
+  const savedTime = serviceModalVideo.currentTime || 0
+  const wasPaused = serviceModalVideo.paused
+  serviceModalVideo.src = cfg[lang] || cfg.en
+  serviceModalVideo.load()
+  serviceModalVideo.addEventListener('loadedmetadata', () => {
+    if (savedTime > 0 && Number.isFinite(serviceModalVideo.duration)) {
+      serviceModalVideo.currentTime = Math.min(savedTime, Math.max(0, serviceModalVideo.duration - 0.1))
+    }
+    if (!wasPaused) serviceModalVideo.play().catch(() => {})
+  }, { once: true })
+}
+
+function closeServiceModal() {
+  if (!serviceModal) return
+  serviceModal.classList.remove('active')
+  serviceModal.setAttribute('aria-hidden', 'true')
+  document.body.style.overflow = ''
+  activeServiceKey = null
+  if (serviceModalVideo) {
+    serviceModalVideo.pause()
+    serviceModalVideo.removeAttribute('src')
+    serviceModalVideo.load()
+  }
+  soundEngine.setDucked('serviceModal', false)
+}
+
+if (serviceModalClose) serviceModalClose.addEventListener('click', closeServiceModal)
+if (serviceModalOverlay) serviceModalOverlay.addEventListener('click', closeServiceModal)
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && serviceModal?.classList.contains('active')) {
+    closeServiceModal()
+  }
 })
 
 if (prefersTouch && !prefersReducedMotion) {

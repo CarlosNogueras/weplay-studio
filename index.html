@@ -197,38 +197,50 @@
                             cutting-edge AI pipelines.</p>
                     </div>
                     <div class="services-grid">
-                        <article class="service-card reveal-on-scroll" data-service="animation">
+                        <article class="service-card reveal-on-scroll" data-service="animation" role="button" tabindex="0" aria-label="Watch Animation explainer video">
                             <div class="service-image">
                                 <img src="/animation-service.jpg" alt="Animation Services" loading="lazy" />
                                 <video class="service-video" src="/videos/animation-service.mp4"
                                     poster="/animation-service.jpg" muted loop playsinline preload="none"
                                     aria-hidden="true"></video>
                                 <div class="service-image-glow" aria-hidden="true"></div>
+                                <span class="service-play-pill" aria-hidden="true">
+                                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
+                                    <span data-i18n="services.watchExplainer">Watch explainer</span>
+                                </span>
                             </div>
                             <h3 class="service-title" data-i18n="services.animation.title">Animation</h3>
                             <p class="service-desc" data-i18n="services.animation.desc" data-i18n-html="true">From
                                 concept to final delivery, we create stunning <span class="text-accent">2D and 3D
                                     animations</span> that tell your story with impact and emotion.</p>
                         </article>
-                        <article class="service-card reveal-on-scroll" data-service="ai">
+                        <article class="service-card reveal-on-scroll" data-service="ai" role="button" tabindex="0" aria-label="Watch Generative AI explainer video">
                             <div class="service-image">
                                 <img src="/ai-service.jpg" alt="Generative AI Services" loading="lazy" />
                                 <video class="service-video" src="/videos/ai-service.mp4" poster="/ai-service.jpg" muted
                                     loop playsinline preload="none" aria-hidden="true"></video>
                                 <div class="service-image-glow" aria-hidden="true"></div>
+                                <span class="service-play-pill" aria-hidden="true">
+                                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
+                                    <span data-i18n="services.watchExplainer">Watch explainer</span>
+                                </span>
                             </div>
                             <h3 class="service-title" data-i18n="services.ai.title">Generative AI</h3>
                             <p class="service-desc" data-i18n="services.ai.desc" data-i18n-html="true">Leveraging <span
                                     class="text-accent">cutting-edge AI technologies</span> to create unique visual
                                 experiences and innovative content solutions.</p>
                         </article>
-                        <article class="service-card reveal-on-scroll" data-service="consulting">
+                        <article class="service-card reveal-on-scroll" data-service="consulting" role="button" tabindex="0" aria-label="Watch Consulting explainer video">
                             <div class="service-image">
                                 <img src="/consulting-service.jpg" alt="Consulting Services" loading="lazy" />
                                 <video class="service-video" src="/videos/consulting-service.mp4"
                                     poster="/consulting-service.jpg" muted loop playsinline preload="none"
                                     aria-hidden="true"></video>
                                 <div class="service-image-glow" aria-hidden="true"></div>
+                                <span class="service-play-pill" aria-hidden="true">
+                                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
+                                    <span data-i18n="services.watchExplainer">Watch explainer</span>
+                                </span>
                             </div>
                             <h3 class="service-title" data-i18n="services.consulting.title">Consulting</h3>
                             <p class="service-desc" data-i18n="services.consulting.desc" data-i18n-html="true">Expert
@@ -325,6 +337,24 @@
                     reserved.</p>
             </div>
         </footer>
+
+        <!-- Service Explainer Panoramic Video Modal -->
+        <div id="service-video-modal" class="service-video-modal" role="dialog" aria-modal="true"
+            aria-labelledby="service-modal-title" aria-hidden="true">
+            <div class="service-video-overlay"></div>
+            <div class="service-video-dialog">
+                <div class="service-video-header">
+                    <div class="service-video-heading">
+                        <span class="service-video-kicker">WEPLAY STUDIO // <span id="service-modal-lang" data-i18n="reel.badge">Audio · EN</span></span>
+                        <h3 id="service-modal-title" class="service-video-title">Animation</h3>
+                    </div>
+                    <button type="button" class="service-video-close" aria-label="Close">&times;</button>
+                </div>
+                <div class="service-video-frame">
+                    <video id="service-modal-video" class="service-modal-player" controls playsinline preload="metadata"></video>
+                </div>
+            </div>
+        </div>
 
         <!-- Contact Modal -->
         <div id="contact-modal" class="contact-modal" role="dialog" aria-modal="true"
